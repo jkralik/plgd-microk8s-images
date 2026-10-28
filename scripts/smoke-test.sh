@@ -9,7 +9,8 @@ actual="$(docker run --rm --entrypoint sha256sum "$theme" /theme/plgd-keycloak-t
 cid="$(docker run --detach --env ALLOW_EMPTY_PASSWORD=yes "$mongo")"
 trap 'docker logs "$cid"; docker rm --force --volumes "$cid" >/dev/null' EXIT
 for ((i=0; i<90; i++)); do
-    if docker exec "$cid" mongosh --quiet --eval 'quit(db.adminCommand({ping:1}).ok === 1 ? 0 : 1)' >/dev/null 2>&1; then
+    if docker logs "$cid" 2>&1 | grep -F '** Starting MongoDB **' >/dev/null &&
+        docker exec "$cid" mongosh --quiet --eval 'quit(db.adminCommand({ping:1}).ok === 1 ? 0 : 1)' >/dev/null 2>&1; then
         docker exec "$cid" mongosh --quiet --eval \
             'const d=db.getSiblingDB("image_smoke"); d.check.insertOne({value:42}); quit(d.check.findOne().value === 42 ? 0 : 1)'
         exit 0

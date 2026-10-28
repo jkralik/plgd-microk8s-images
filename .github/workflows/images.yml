@@ -25,7 +25,7 @@ jobs:
       IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
       VERSION_SUFFIX: -build-${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Build from verified inputs
         run: bash scripts/build.sh
       - name: Test version, theme and fresh database initialization
