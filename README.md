@@ -103,7 +103,11 @@ mongodb:
 
 This covers both the MongoDB server and its `log-dir` init container. Keycloak's
 `keycloak-auth-template-bootstrapper` init container uses the preserved theme
-image with the digest listed above.
+image with the digest listed above. Its Helm `startupProbe` is enabled with
+`initialDelaySeconds: 30`, `periodSeconds: 10`, `timeoutSeconds: 5` and
+`failureThreshold: 90`: Quarkus provider preparation on the CPU-limited Pi can
+exceed the old five-minute liveness delay. Readiness and normal liveness checks
+remain in place after startup.
 
 The upstream hub chart hardcodes an obsolete nginx image for mock OAuth's
 `init-sign-keys`; it has no image override. That Deployment instead uses the
