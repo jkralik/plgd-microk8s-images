@@ -4,7 +4,10 @@ cd "$(dirname "$0")/.."
 engine="${CONTAINER_ENGINE:-docker}"
 registry="${IMAGE_PREFIX:-ghcr.io/jkralik}"
 suffix="${VERSION_SUFFIX:--rebuild}"
-command -v "$engine" >/dev/null
+if ! command -v "$engine" >/dev/null; then
+    echo "Container engine not installed: $engine" >&2
+    exit 1
+fi
 if [[ "$(uname -m)" != aarch64 && "$(uname -m)" != arm64 ]]; then
     echo 'Build on native ARM64; smoke-test on a Raspberry Pi 4 before deployment.' >&2
     exit 1

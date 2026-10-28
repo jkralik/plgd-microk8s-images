@@ -86,3 +86,40 @@ and wait-for-port Apache-2.0, yq MIT, OpenSSL's notices under
 `/usr/share/doc/libssl1.1/copyright`, and theme dependency licenses inside the JAR.
 The base image also carries its original package license notices. This
 repository does not relicense those components.
+
+## Cluster integration
+
+The `try-plgd-cloud` and `mock-plgd-cloud` Argo Applications use these MongoDB
+Helm values, including the immutable digest:
+
+```yaml
+mongodb:
+  image:
+    registry: ghcr.io
+    repository: jkralik/mongodb-bitnami-pi4
+    tag: 7.0.40
+    digest: sha256:acd207f27c4a79946daa6e8ca7bb8df4bee76cfd566f6b7fcd65e122f2ef14bb
+```
+
+This covers both the MongoDB server and its `log-dir` init container. Keycloak's
+`keycloak-auth-template-bootstrapper` init container uses the preserved theme
+image with the digest listed above.
+
+The upstream hub chart hardcodes an obsolete nginx image for mock OAuth's
+`init-sign-keys`; it has no image override. That Deployment instead uses the
+preserved GHCR MongoDB image (for Bash/OpenSSL), with existing Argo
+`RespectIgnoreDifferences` exceptions. Its original two signing keys are
+preserved in the immutable Kubernetes Secret `mock-oauth-signing-keys`. A
+Helm-declared extra Secret volume is mounted read-only into the init container,
+which copies the keys to the existing `/keys` emptyDir before initialization.
+Both keys were compared byte-for-byte before and after the rollout. Do not
+delete that Secret or rotate it without planning token invalidation.
+
+**GitOps boundary:** this repository builds images; it is not the Git source
+for those Applications. Their inline Helm values are stored in Argo CD.
+Mock OAuth's init image, security context, command and volume mounts remain
+live Deployment overrides protected by narrow ignore rules. Argo sync
+preserves them, but deleting/recreating the Deployment from the unmodified
+upstream chart alone will not restore those overrides. Keep the Application
+configuration and signing Secret in your private cluster backup; never commit
+their credentials here.
