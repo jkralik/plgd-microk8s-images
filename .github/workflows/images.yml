@@ -1,0 +1,43 @@
+name: Build ARM64 images
+on:
+  push:
+    branches: [main]
+    paths:
+      - mongodb/**
+      - keycloak-theme/**
+      - scripts/**
+      - checksums.sha256
+      - .github/workflows/images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    env:
+      IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+      VERSION_SUFFIX: -build-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build from verified inputs
+        run: bash scripts/build.sh
+      - name: Test version, theme and fresh database initialization
+        run: |
+          bash scripts/smoke-test.sh \
+            "$IMAGE_PREFIX/mongodb-bitnami-pi4:7.0.40$VERSION_SUFFIX" \
+            "$IMAGE_PREFIX/keycloak-theme-pi4:0.0.1$VERSION_SUFFIX"
+      - name: Authenticate to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Publish tested commit-specific tags
+        run: |
+          docker push "$IMAGE_PREFIX/mongodb-bitnami-pi4:7.0.40$VERSION_SUFFIX"
+          docker push "$IMAGE_PREFIX/keycloak-theme-pi4:0.0.1$VERSION_SUFFIX"

@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!overlay.tar.gz
+!yq
+!.build/
+!.build/mongod
+!.build/mongos
